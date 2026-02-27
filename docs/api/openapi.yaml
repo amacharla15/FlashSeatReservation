@@ -1,0 +1,260 @@
+openapi: 3.0.3
+info:
+  title: Seat Reservation Lite API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /holds:
+    post:
+      operationId: createHold
+      summary: Create a temporary hold on a seat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HoldCreateRequest"
+      responses:
+        "201":
+          description: Hold created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoldCreateResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Event or seat not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Seat not available (already held or booked)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /bookings/confirm:
+    post:
+      operationId: confirmBooking
+      summary: Confirm a booking from a valid hold token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingConfirmRequest"
+      responses:
+        "201":
+          description: Booking confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingConfirmResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Hold token not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          description: Hold expired
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Already booked / already confirmed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /holds/{holdToken}:
+    delete:
+      operationId: releaseHold
+      summary: Release a hold by token
+      parameters:
+        - name: holdToken
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Hold released
+        "404":
+          description: Hold token not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          description: Hold already expired
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /events/{eventId}/seats:
+    get:
+      operationId: listSeatStatus
+      summary: List seat statuses for an event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Seat status list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeatStatusListResponse"
+        "404":
+          description: Event not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+components:
+  schemas:
+    HoldCreateRequest:
+      type: object
+      required: [eventId, seatNo]
+      properties:
+        eventId:
+          type: string
+          example: "event_123"
+        seatNo:
+          type: string
+          example: "A1"
+        ttlSeconds:
+          type: integer
+          minimum: 15
+          maximum: 600
+          example: 120
+
+    HoldCreateResponse:
+      type: object
+      required: [holdToken, eventId, seatNo, status, expiresAt]
+      properties:
+        holdToken:
+          type: string
+          example: "b2c0d3c3-8c2c-4d66-9e2f-2f9b79a3d0c2"
+        eventId:
+          type: string
+          example: "event_123"
+        seatNo:
+          type: string
+          example: "A1"
+        status:
+          type: string
+          enum: [HELD]
+          example: "HELD"
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2026-02-26T20:15:30Z"
+
+    BookingConfirmRequest:
+      type: object
+      required: [holdToken]
+      properties:
+        holdToken:
+          type: string
+          example: "b2c0d3c3-8c2c-4d66-9e2f-2f9b79a3d0c2"
+        customerEmail:
+          type: string
+          format: email
+          example: "user@example.com"
+
+    BookingConfirmResponse:
+      type: object
+      required: [bookingId, eventId, seatNo, status, bookedAt]
+      properties:
+        bookingId:
+          type: string
+          example: "booking_789"
+        eventId:
+          type: string
+          example: "event_123"
+        seatNo:
+          type: string
+          example: "A1"
+        status:
+          type: string
+          enum: [BOOKED]
+          example: "BOOKED"
+        bookedAt:
+          type: string
+          format: date-time
+          example: "2026-02-26T20:14:10Z"
+
+    SeatStatusListResponse:
+      type: object
+      required: [eventId, seats]
+      properties:
+        eventId:
+          type: string
+          example: "event_123"
+        seats:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeatStatus"
+
+    SeatStatus:
+      type: object
+      required: [seatNo, status]
+      properties:
+        seatNo:
+          type: string
+          example: "A1"
+        status:
+          type: string
+          enum: [AVAILABLE, HELD, BOOKED]
+          example: "AVAILABLE"
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-02-26T20:15:30Z"
+
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance, errorCode]
+      properties:
+        type:
+          type: string
+          example: "about:blank"
+        title:
+          type: string
+          example: "Seat not available"
+        status:
+          type: integer
+          example: 409
+        detail:
+          type: string
+          example: "Seat A1 for event event_123 is already held or booked."
+        instance:
+          type: string
+          example: "/holds"
+        errorCode:
+          type: string
+          example: "SEAT_NOT_AVAILABLE"
