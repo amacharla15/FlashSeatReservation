@@ -47,3 +47,4 @@ jobs:
             --name ${{ secrets.ACA_APP_NAME }} \
             --resource-group ${{ secrets.ACA_RG }} \
             --image $IMAGE:${{ github.sha }}
+            --set-env-vars SPRING_PROFILES_ACTIVE=nodb
