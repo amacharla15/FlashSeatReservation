@@ -21,7 +21,7 @@ jobs:
           cache: maven
 
       - name: Build jar
-        run: bash ./mvnw -q -DskipTests package
+        run: bash ./mvnw -q -DskipTests clean package
 
       - name: Login to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
