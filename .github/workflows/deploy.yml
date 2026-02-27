@@ -20,8 +20,6 @@ jobs:
           java-version: "21"
           cache: maven
 
-
-
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
@@ -29,7 +27,7 @@ jobs:
         run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/seat-reservation-lite" >> $GITHUB_ENV
 
       - name: Build image
-        run: docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:latest .
+        run: docker build -f dockerfile -t $IMAGE:${{ github.sha }} -t $IMAGE:latest .
 
       - name: Push image
         run: |
@@ -46,5 +44,6 @@ jobs:
           az containerapp update \
             --name ${{ secrets.ACA_APP_NAME }} \
             --resource-group ${{ secrets.ACA_RG }} \
-            --image $IMAGE:${{ github.sha }}
-            --set-env-vars SPRING_PROFILES_ACTIVE=nodb
+            --image $IMAGE:${{ github.sha }} \
+            --set-env-vars \
+              "SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration,org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
