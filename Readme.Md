@@ -11,6 +11,10 @@ This is the same core problem real ticketing systems solve: *many users racing f
 
 ---
 
+#ENTIRE WORKFLOW OR SUCCESS OF CONCURRENCY, DATABASE, DEPLOYMENT AND CLOUD IN DOCS -> SCREENSHOTS.
+
+---
+
 ## Tech Stack
 
 - **Java 21**, **Spring Boot 4.x**
